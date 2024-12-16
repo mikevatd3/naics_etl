@@ -1,0 +1,7 @@
+*.xlsx
+*.csv
+*.log
+*.parquet
+*.gzip
+config.toml
+__pycache__
