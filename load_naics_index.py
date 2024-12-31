@@ -26,18 +26,15 @@ from metadata_audit.datatypes import Topic, Table, Edition
 from metadata_audit.git import log_git
 
 
-def record_metadata(
-    schema, 
-    table_name, 
-    metadata,
-    edition_date,
-):
+def record_metadata(schema, table_name, metadata, edition_date, cleaned):
     schema_dict = schema.to_json_schema()
     schema_variables = schema_dict["properties"]
 
     for variable in metadata["tables"][table_name]["variables"]:
-        variable["data_type"] = schema_variables[variable["name"]]["items"]["type"]
-    
+        variable["data_type"] = schema_variables[variable["name"]]["items"][
+            "type"
+        ]
+
     # Validate base topic -- it skips the recursive check
     Topic(**metadata)
 
@@ -47,9 +44,12 @@ def record_metadata(
     # Pydantic Validation of Edition metadata
 
     edition = metadata["tables"][table_name]["editions"][edition_date]
+    script_path = Path(__file__).resolve()
 
-    edition["version"] = log_git(Path(__file__).resolve())
-    
+    edition["version"] = log_git(script_path)
+    edition["script_path"] = str(script_path)
+    edition["num_records"] = len(cleaned)
+
     Edition(**edition)
 
 
@@ -88,10 +88,9 @@ def main(edition_date):
     # 'Setup logging' makes sure the logging is saved in the right place.
     setup_logging()
 
-
     with open("metadata.toml", "rb") as md:
         metadata = tomli.load(md)
-    
+
     result = (
         pd.read_csv(
             Path.cwd().parent.parent
@@ -110,11 +109,14 @@ def main(edition_date):
         .drop("Unnamed: 0", axis=1)
     )
 
-    
-    # Validate 
+    # Validate
     validated = NAICSDescriptions.validate(result)
-    record_metadata(NAICSDescriptions, table_name, metadata, edition_date)
+    record_metadata(
+        NAICSDescriptions, table_name, metadata, edition_date, result
+    )
     # Is this an issue? Probably not.
+
+
 #     with db_engine.connect() as db:
 #         validated.to_sql(
 #             "naics_codes", db, index=False, schema="naics", if_exists="replace"
