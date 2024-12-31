@@ -521,13 +521,13 @@ files = [
 
 [[package]]
 name = "click"
-version = "8.1.7"
+version = "8.1.8"
 description = "Composable command line interface toolkit"
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "click-8.1.7-py3-none-any.whl", hash = "sha256:ae74fb96c20a0277a1d615f1e4d73c8414f5a98db8b799a7931d1582f3390c28"},
-    {file = "click-8.1.7.tar.gz", hash = "sha256:ca9853ad459e787e2192211578cc907e7594e294c7ccc834310722b41b9ca6de"},
+    {file = "click-8.1.8-py3-none-any.whl", hash = "sha256:63c132bbbed01578a06712a2d1f497bb62d9c1c0d329b7903a866228027263b2"},
+    {file = "click-8.1.8.tar.gz", hash = "sha256:ed53c9d8990d83c2a27deae68e4ee337473f6330c040a31d4225c9574d16096a"},
 ]
 
 [package.dependencies]
@@ -1609,6 +1609,33 @@ type = "git"
 url = "https://github.com/mikevatd3/metadata_collector.git"
 reference = "HEAD"
 resolved_reference = "22ae01876900f7e0ea70b8b48090e8115c2eb7bb"
+
+[[package]]
+name = "metadata-audit"
+version = "0.1.0"
+description = "A tool for inspecting metadata using toml, Pandera and Postgres."
+optional = false
+python-versions = ">=3.10, <=3.13"
+files = []
+develop = true
+
+[package.dependencies]
+dvc = "^3.56.0"
+geoalchemy2 = "^0.15.2"
+geopandas = "^1.0.1"
+pandas = "^2.2.2"
+pandera = "^0.21.0"
+psycopg2-binary = "^2.9.9"
+pyarrow = "^17.0.0"
+pydantic = "^2.10.3"
+pygit2 = "^1.16.0"
+SQLAlchemy = "^2.0.31"
+tabulate = "^0.9.0"
+tomli = "^2.0.1"
+
+[package.source]
+type = "directory"
+url = "../../tools/metadata_audit"
 
 [[package]]
 name = "multidict"
@@ -6743,4 +6770,4 @@ test = ["zope.testing"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.10, <=3.13"
-content-hash = "bef81ee9c514e13eed78acaff0446ec4620feb61617bea05e4f4f51fe998d130"
+content-hash = "e4d2da0ccd90e0a6b1027cfdd091329e21c9b9586788b6444f2d94e8856cdbfd"
