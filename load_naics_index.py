@@ -15,42 +15,13 @@ from pathlib import Path
 import logging
 
 import click
-import pygit2
 import pandas as pd
 import pandera as pa
 from pandera.typing import Series
 import tomli
 
 from naics import setup_logging, db_engine
-from metadata_audit.datatypes import Topic, Table, Edition
-from metadata_audit.git import log_git
-
-
-def record_metadata(schema, table_name, metadata, edition_date, cleaned):
-    schema_dict = schema.to_json_schema()
-    schema_variables = schema_dict["properties"]
-
-    for variable in metadata["tables"][table_name]["variables"]:
-        variable["data_type"] = schema_variables[variable["name"]]["items"][
-            "type"
-        ]
-
-    # Validate base topic -- it skips the recursive check
-    Topic(**metadata)
-
-    # Pydantic Validation of current Table metadata
-    Table(**metadata["tables"][table_name])
-
-    # Pydantic Validation of Edition metadata
-
-    edition = metadata["tables"][table_name]["editions"][edition_date]
-    script_path = Path(__file__).resolve()
-
-    edition["version"] = log_git(script_path)
-    edition["script_path"] = str(script_path)
-    edition["num_records"] = len(cleaned)
-
-    Edition(**edition)
+from metadata_audit.capture import record_metadata
 
 
 class NAICSDescriptions(pa.DataFrameModel):
@@ -90,15 +61,11 @@ def main(edition_date):
 
     with open("metadata.toml", "rb") as md:
         metadata = tomli.load(md)
+    
+    edition = metadata["tables"][table_name]["editions"][edition_date]
 
     result = (
-        pd.read_csv(
-            Path.cwd().parent.parent
-            / "data"
-            / "naics"
-            / "raw"
-            / "naics_descriptions_2022.csv"
-        )
+        pd.read_csv(edition["raw_path"])
         .rename(
             columns={
                 "Code": "code",
@@ -111,11 +78,15 @@ def main(edition_date):
 
     # Validate
     validated = NAICSDescriptions.validate(result)
-    record_metadata(
-        NAICSDescriptions, table_name, metadata, edition_date, result
-    )
-    # Is this an issue? Probably not.
 
+    record_metadata(
+        NAICSDescriptions,
+        __file__,
+        table_name, 
+        metadata, 
+        edition_date, 
+        result
+    )
 
 #     with db_engine.connect() as db:
 #         validated.to_sql(
