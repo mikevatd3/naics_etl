@@ -15,7 +15,6 @@ import pandas as pd
 import pandera as pa
 from pandera.typing import Series
 from pandera.errors import SchemaError, SchemaErrors
-from sqlalchemy import text
 import tomli
 
 from naics import setup_logging, db_engine, metadata_engine
@@ -26,7 +25,7 @@ from sqlalchemy.orm import sessionmaker
 # Set up config and logging for script -- Boilerplate for every script.
 logger = setup_logging()
 
-table_name = "naics_descriptions"
+table_name = "codes"
 
 with open("metadata.toml", "rb") as md:
     metadata = tomli.load(md)
@@ -106,7 +105,7 @@ def main(edition_date):
         logger.info("Metadata recorded, pushing data to db.")
 
         validated.to_sql(  # type: ignore
-            "naics_codes", db, index=False, schema="naics", if_exists="replace"
+            table_name, db, index=False, schema="naics", if_exists="replace"
         )
 
 
