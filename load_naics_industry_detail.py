@@ -32,21 +32,26 @@ with open("metadata.toml", "rb") as md:
     metadata = tomli.load(md)
 
 
-# Every loader script starts with a pydantic model -- This is both to
-# validate the clean-up process output and to ensure that fields agree
-# with the metadata provided to the metadata system.
-class NAICSDescriptions(pa.DataFrameModel):
+class NAICSIndustryDetail(pa.DataFrameModel):
     """
     This is one of two tables that make sense to include
     """
 
-    code: str = pa.Field(unique=True)
-    title: str = pa.Field()
+    id: int = pa.Field(unique=True, nullable=False)
+    code: str = pa.Field() # Not required to be unique in this table
     description: str = pa.Field(nullable=True)
 
     class Config:  # type: ignore
         strict = True
         coerce = True
+
+    @pa.check("code")
+    def code_len(cls, code: Series[str]) -> bool:
+        """
+        The codes should all be the same length -- some are all "****"
+        to reflect designations that have changed.
+        """
+        return (code.str.len() == 6).all()
 
     @pa.check("description")
     def max_nulls(cls, description: Series[str]) -> bool:
@@ -61,35 +66,39 @@ class NAICSDescriptions(pa.DataFrameModel):
 @click.argument("edition_date")
 def main(edition_date):
     edition = metadata["tables"][table_name]["editions"][edition_date]
+    
+    file = pd.read_csv(edition["raw_path"])
+
 
     result = (
         pd.read_csv(edition["raw_path"])
         .rename(
             columns={
-                "Code": "code",
-                "Title": "title",
-                "Description": "description",
+                "Unnamed: 0": "id",
+                "NAICS22": "code",
+                "INDEX ITEM DESCRIPTION": "description",
             }
         )
-        .drop("Unnamed: 0", axis=1)
     )
 
     logger.info(f"Cleaning {table_name} was successful validating schema.")
 
-    # Validate
+
     try:
-        validated = NAICSDescriptions.validate(result)
+        validated = NAICSIndustryDetail.validate(result)
         logger.info(
             f"Validating {table_name} was successful. Recording metadata."
         )
-    except SchemaError | SchemaErrors as e:
+    except (SchemaError, SchemaErrors) as e:
         logger.error(f"Validating {table_name} failed.", e)
+
+    return 
 
     with metadata_engine.connect() as db:
         logger.info("Connected to metadata schema.")
 
         record_metadata(
-            NAICSDescriptions,
+            NAICSIndustryDetail,
             __file__,
             table_name,
             metadata,

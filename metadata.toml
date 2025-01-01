@@ -83,6 +83,10 @@ source_url = "https://www.census.gov/naics/?99967"
 notes = """The code on this table can reference several industry descriptions."""
 
 [[tables.industry_detail.variables]]
+name = "id"
+description = "An surrogate ID number for each description."
+
+[[tables.industry_detail.variables]]
 name = "code"
 description = "The code that best aligns with the industry described"
 standard = "NAICS"
