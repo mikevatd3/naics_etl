@@ -31,7 +31,8 @@ table_name = "naics_descriptions"
 with open("metadata.toml", "rb") as md:
     metadata = tomli.load(md)
 
-# Every loader script starts with a pydantic model -- This is both to 
+
+# Every loader script starts with a pydantic model -- This is both to
 # validate the clean-up process output and to ensure that fields agree
 # with the metadata provided to the metadata system.
 class NAICSDescriptions(pa.DataFrameModel):
@@ -83,11 +84,9 @@ def main(edition_date):
         )
     except SchemaError | SchemaErrors as e:
         logger.error(f"Validating {table_name} failed.", e)
-    
+
     with metadata_engine.connect() as db:
         logger.info("Connected to metadata schema.")
-        logger.info("Trying to create random nice table.")
-        db.execute(text("CREATE TABLE test_foo (id serial PRIMARY KEY, info text)"))
 
         record_metadata(
             NAICSDescriptions,
@@ -99,8 +98,10 @@ def main(edition_date):
             sessionmaker(bind=db)(),
             logger,
         )
+
         db.commit()
         logger.info("successfully recorded metadata")
+
     with db_engine.connect() as db:
         logger.info("Metadata recorded, pushing data to db.")
 
