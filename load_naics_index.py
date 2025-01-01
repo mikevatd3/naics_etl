@@ -92,6 +92,7 @@ def main(edition_date):
     
 
     with metadata_engine.connect() as db:
+        logger.info("Connected to metadata schema.")
         record_metadata(
             NAICSDescriptions,
             __file__,
