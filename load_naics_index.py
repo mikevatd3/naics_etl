@@ -100,7 +100,7 @@ def main(edition_date):
             metadata,
             edition_date,
             result,
-            sessionmaker(bind=db),
+            sessionmaker(bind=db)(),
             logger
         )
 
