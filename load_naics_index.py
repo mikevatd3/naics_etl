@@ -19,7 +19,7 @@ from pandera.typing import Series
 from pandera.errors import SchemaError, SchemaErrors
 import tomli
 
-from naics import setup_logging, db_engine
+from naics import setup_logging, db_engine, metadata_engine
 from metadata_audit.capture import record_metadata
 from sqlalchemy.orm import Session
 
@@ -89,8 +89,9 @@ def main(edition_date):
         )
     except SchemaError | SchemaErrors as e:
         logger.error(f"Validating {table_name} failed.", e)
+    
 
-    with db_engine.connect() as db:
+    with metadata_engine.connect() as db:
         record_metadata(
             NAICSDescriptions,
             __file__,
@@ -101,6 +102,8 @@ def main(edition_date):
             Session(db),
             logger
         )
+
+    with db_engine.connect() as db:
 
         logger.info("Metadata recorded, pushing data to db.")
 
