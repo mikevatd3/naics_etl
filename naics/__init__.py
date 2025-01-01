@@ -17,6 +17,12 @@ db_engine = create_engine(
     connect_args={'options': f'-csearch_path={config["app"]["name"]},public'}
 )
 
+metadata_engine = create_engine(
+    f"postgresql+psycopg2://{config['db']['user']}:{config['db']['password']}"
+    f"@{config['db']['host']}:{config['db']['port']}/{config['db']['name']}",
+    connect_args={'options': f'-csearch_path={config["db"]["metadata_schema"]},public'}
+)
+
 
 def setup_logging():
     with open(Path.cwd() / "logging_config.json") as f:

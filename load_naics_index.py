@@ -6,24 +6,40 @@ Key features:
     - Using a pandera schema to validate the data and to capture metadata.
     - Using logging to track when the file was loaded.
 
-
 Define Each Field that you'd like to include (Something else will have to 
 be done for ACS loads).
 """
 
-from pathlib import Path
 import logging
 
 import click
 import pandas as pd
 import pandera as pa
 from pandera.typing import Series
+from pandera.errors import SchemaError, SchemaErrors
 import tomli
 
 from naics import setup_logging, db_engine
 from metadata_audit.capture import record_metadata
+from sqlalchemy.orm import Session
+
+# Set up config and logging for script -- Boilerplate for every script.
+with open("config.toml", "rb") as f:
+    config = tomli.load(f)
+
+logger = logging.getLogger(config["app"]["name"])
+setup_logging()
 
 
+table_name = "naics_descriptions"
+
+with open("metadata.toml", "rb") as md:
+    metadata = tomli.load(md)
+
+
+# Every loader script starts with a pydantic model -- This is both to 
+# validate the clean-up process output and to ensure that fields agree
+# with the metadata provided to the metadata system.
 class NAICSDescriptions(pa.DataFrameModel):
     """
     This is one of two tables that make sense to include
@@ -49,19 +65,6 @@ class NAICSDescriptions(pa.DataFrameModel):
 @click.command()
 @click.argument("edition_date")
 def main(edition_date):
-    table_name = "naics_descriptions"
-
-    with open("config.toml", "rb") as f:
-        config = tomli.load(f)
-
-    logger = logging.getLogger(config["app"]["name"])
-
-    # 'Setup logging' makes sure the logging is saved in the right place.
-    setup_logging()
-
-    with open("metadata.toml", "rb") as md:
-        metadata = tomli.load(md)
-    
     edition = metadata["tables"][table_name]["editions"][edition_date]
 
     result = (
@@ -76,22 +79,34 @@ def main(edition_date):
         .drop("Unnamed: 0", axis=1)
     )
 
+    logger.info(f"Cleaning {table_name} was successful validating schema.")
+
     # Validate
-    validated = NAICSDescriptions.validate(result)
+    try:
+        validated = NAICSDescriptions.validate(result)
+        logger.info(
+            f"Validating {table_name} was successful. Recording metadata."
+        )
+    except SchemaError | SchemaErrors as e:
+        logger.error(f"Validating {table_name} failed.", e)
 
-    record_metadata(
-        NAICSDescriptions,
-        __file__,
-        table_name, 
-        metadata, 
-        edition_date, 
-        result
-    )
+    with db_engine.connect() as db:
+        record_metadata(
+            NAICSDescriptions,
+            __file__,
+            table_name,
+            metadata,
+            edition_date,
+            result,
+            Session(db),
+            logger
+        )
 
-#     with db_engine.connect() as db:
-#         validated.to_sql(
-#             "naics_codes", db, index=False, schema="naics", if_exists="replace"
-#         )
+        logger.info("Metadata recorded, pushing data to db.")
+
+        validated.to_sql(  # type: ignore
+            "naics_codes", db, index=False, schema="naics", if_exists="append"
+        )
 
 
 if __name__ == "__main__":
