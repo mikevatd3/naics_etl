@@ -15,11 +15,13 @@ import pandas as pd
 import pandera as pa
 from pandera.typing import Series
 from pandera.errors import SchemaError, SchemaErrors
+from sqlalchemy import text
 import tomli
 
 from naics import setup_logging, db_engine, metadata_engine
 from metadata_audit.capture import record_metadata
 from sqlalchemy.orm import sessionmaker
+
 
 # Set up config and logging for script -- Boilerplate for every script.
 logger = setup_logging()
@@ -28,7 +30,6 @@ table_name = "naics_descriptions"
 
 with open("metadata.toml", "rb") as md:
     metadata = tomli.load(md)
-
 
 # Every loader script starts with a pydantic model -- This is both to 
 # validate the clean-up process output and to ensure that fields agree
@@ -83,9 +84,11 @@ def main(edition_date):
     except SchemaError | SchemaErrors as e:
         logger.error(f"Validating {table_name} failed.", e)
     
-
     with metadata_engine.connect() as db:
         logger.info("Connected to metadata schema.")
+        logger.info("Trying to create random nice table.")
+        db.execute(text("CREATE TABLE test_foo (id serial PRIMARY KEY, info text)"))
+
         record_metadata(
             NAICSDescriptions,
             __file__,
@@ -94,15 +97,15 @@ def main(edition_date):
             edition_date,
             result,
             sessionmaker(bind=db)(),
-            logger
+            logger,
         )
-
+        db.commit()
+        logger.info("successfully recorded metadata")
     with db_engine.connect() as db:
-
         logger.info("Metadata recorded, pushing data to db.")
 
         validated.to_sql(  # type: ignore
-            "naics_codes", db, index=False, schema="naics", if_exists="append"
+            "naics_codes", db, index=False, schema="naics", if_exists="replace"
         )
 
 
