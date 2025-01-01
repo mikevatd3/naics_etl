@@ -14,13 +14,15 @@ with open(Path().cwd() / "config.toml", "rb") as f:
 db_engine = create_engine(
     f"postgresql+psycopg2://{config['db']['user']}:{config['db']['password']}"
     f"@{config['db']['host']}:{config['db']['port']}/{config['db']['name']}",
-    connect_args={'options': f'-csearch_path={config["app"]["name"]},public'}
+    connect_args={'options': f'-csearch_path={config["app"]["name"]},public'},
+    echo=True
 )
 
 metadata_engine = create_engine(
     f"postgresql+psycopg2://{config['db']['user']}:{config['db']['password']}"
     f"@{config['db']['host']}:{config['db']['port']}/{config['db']['name']}",
-    connect_args={'options': f'-csearch_path={config["db"]["metadata_schema"]},public'}
+    connect_args={'options': f'-csearch_path={config["db"]["metadata_schema"]},public'},
+    echo=True
 )
 
 
