@@ -21,7 +21,7 @@ import tomli
 
 from naics import setup_logging, db_engine, metadata_engine
 from metadata_audit.capture import record_metadata
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import sessionmaker
 
 # Set up config and logging for script -- Boilerplate for every script.
 with open("config.toml", "rb") as f:
@@ -100,7 +100,7 @@ def main(edition_date):
             metadata,
             edition_date,
             result,
-            Session(db),
+            sessionmaker(bind=db),
             logger
         )
 
