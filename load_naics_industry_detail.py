@@ -39,7 +39,7 @@ class NAICSIndustryDetail(pa.DataFrameModel):
 
     id: int = pa.Field(unique=True, nullable=False)
     code: str = pa.Field() # Not required to be unique in this table
-    description: str = pa.Field(nullable=True)
+    industry_description: str = pa.Field(nullable=True)
 
     class Config:  # type: ignore
         strict = True
@@ -53,13 +53,13 @@ class NAICSIndustryDetail(pa.DataFrameModel):
         """
         return (code.str.len() == 6).all()
 
-    @pa.check("description")
-    def max_nulls(cls, description: Series[str]) -> bool:
+    @pa.check("industry_description")
+    def max_nulls(cls, industry_description: Series[str]) -> bool:
         """
         It's okay for some of these to be null, but if there are too many
         it could indicate a problem.
         """
-        return description.isna().sum() < 200
+        return industry_description.isna().sum() < 200
 
 
 @click.command()
@@ -67,16 +67,13 @@ class NAICSIndustryDetail(pa.DataFrameModel):
 def main(edition_date):
     edition = metadata["tables"][table_name]["editions"][edition_date]
     
-    file = pd.read_csv(edition["raw_path"])
-
-
     result = (
         pd.read_csv(edition["raw_path"])
         .rename(
             columns={
                 "Unnamed: 0": "id",
                 "NAICS22": "code",
-                "INDEX ITEM DESCRIPTION": "description",
+                "INDEX ITEM DESCRIPTION": "industry_description",
             }
         )
     )
@@ -89,10 +86,9 @@ def main(edition_date):
         logger.info(
             f"Validating {table_name} was successful. Recording metadata."
         )
+
     except (SchemaError, SchemaErrors) as e:
         logger.error(f"Validating {table_name} failed.", e)
-
-    return 
 
     with metadata_engine.connect() as db:
         logger.info("Connected to metadata schema.")
