@@ -6,7 +6,6 @@ from sqlalchemy import create_engine
 import tomli
 
 
-# Walk out the the module base path
 with open(Path().cwd() / "config.toml", "rb") as f:
     config = tomli.load(f)
 
@@ -30,3 +29,7 @@ def setup_logging():
         logging_config = json.load(f)
 
     logging.config.dictConfig(logging_config)
+
+    return logging.getLogger(config["app"]["name"])
+
+

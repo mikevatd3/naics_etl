@@ -10,8 +10,6 @@ Define Each Field that you'd like to include (Something else will have to
 be done for ACS loads).
 """
 
-import logging
-
 import click
 import pandas as pd
 import pandera as pa
@@ -24,12 +22,7 @@ from metadata_audit.capture import record_metadata
 from sqlalchemy.orm import sessionmaker
 
 # Set up config and logging for script -- Boilerplate for every script.
-with open("config.toml", "rb") as f:
-    config = tomli.load(f)
-
-logger = logging.getLogger(config["app"]["name"])
-setup_logging()
-
+logger = setup_logging()
 
 table_name = "naics_descriptions"
 
